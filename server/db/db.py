@@ -5,7 +5,8 @@ import time;
 
 conn = psycopg2.connect(
   database='sdc_curium',
-  user='postgres'
+  user='postgres',
+  password= "postgres"
 )
 
 cursor = conn.cursor()
@@ -57,7 +58,7 @@ def read_skus():
     row1 = next(data)
     for row in data:
       if(int(row[1]) <= 1558398):
-        query = '''INSERT INTO skus (size, quantity, styles_id) VALUES ('{}', {}, {});'''.format(str(row[2]), row[3], row[1])
+        query = '''INSERT INTO skus (size, quantity, style_id) VALUES ('{}', {}, {});'''.format(str(row[2]), row[3], row[1])
         cursor.execute(query)
         print('sk: {}'.format(row[0]))
 
@@ -93,8 +94,8 @@ def read_photos():
 #   p6.join()
 #   conn.commit()
 
-# read_skus()
-read_photos()
+read_skus()
+# read_photos()
 conn.commit()
 print('time: {}'.format(time.time() - now))
 
