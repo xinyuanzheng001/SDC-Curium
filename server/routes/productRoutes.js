@@ -98,26 +98,72 @@ app.get("/:product_id/styles", (req, res) => {
   // db.query(
   //   "select json_agg(json_build_object('style_id', styles.style_id, 'name', styles.name, 'sale_price', styles.sale_price, 'photos', json_build_object('thumbnail_url', photos.thumbnail_url, 'url', photos.url))) AS results from styles join photos on styles.product_id = 1 and photos.styles_id=styles.style_id group by styles.style_id;"
   // )
+  // db.query(
+  //   `select json_agg(distinct styles.*) as results, json_agg(distinct jsonb_build_object('thumbnail_url', photos.thumbnail_url, 'url', photos.url)) as photos, json_agg(distinct jsonb_build_object(skus.id, jsonb_build_object('size', skus.size, 'quantity', skus.quantity))) as skus from styles, photos, skus where styles.product_id = ${product_id} and photos.styles_id = styles.style_id and skus.style_id = styles.style_id group by styles.style_id;`
+  // ).then((r) => {
+  //   r.rows.forEach((row) => {
+  //     const temp = row.results[0];
+  //     temp["default?"] = temp["default_style"] === 1 ? true : false;
+  //     temp["sale_price"] =
+  //       temp["sale_price"] === "null" ? 0 : temp["sale_price"];
+  //     delete temp["default_style"];
+  //     delete temp["product_id"];
+  //     temp["photos"] = row.photos;
+  //     temp["skus"] = {};
+  //     row.skus.forEach((r) => {
+  //       temp["skus"][Object.keys(r)[0]] = r[Object.keys(r)[0]];
+  //     });
+  //     data["results"].push(temp);
+  //   });
+  // });
   db.query(
-    `select json_agg(distinct styles.*) as results, json_agg(distinct jsonb_build_object('thumbnail_url', photos.thumbnail_url, 'url', photos.url)) as photos, json_agg(distinct jsonb_build_object(skus.id, jsonb_build_object('size', skus.size, 'quantity', skus.quantity))) as skus from styles, photos, skus where styles.product_id = ${product_id} and photos.styles_id = styles.style_id and skus.style_id = styles.style_id group by styles.style_id;`
+    `select json_agg(st) as results
+    from(
+      select s.style_id, s.name, s.sale_price, s.original_price, s.default_style,
+      (
+        select json_agg(json_build_object('thumbnail_url', ph.thumbnail_url, 'url', ph.url))
+        from(
+          select * from photos where s.style_id = styles_id
+        ) ph
+      ) as photos,
+      (
+        select json_agg(json_build_object(sk.id, json_build_object('quantity', sk.quantity, 'size', sk.size)))
+        from(
+          select * from skus where s.style_id = style_id
+        ) sk
+      ) as skus
+    from styles as s where s.product_id = ${product_id}) st;`
   )
     .then((r) => {
-      r.rows.forEach((row) => {
-        const temp = row.results[0];
-        temp["default?"] = temp["default_style"] === 1 ? true : false;
-        temp["sale_price"] =
-          temp["sale_price"] === "null" ? 0 : temp["sale_price"];
-        delete temp["default_style"];
-        delete temp["product_id"];
-        temp["photos"] = row.photos;
-        temp["skus"] = {};
-        row.skus.forEach((r) => {
-          temp["skus"][Object.keys(r)[0]] = r[Object.keys(r)[0]];
-        });
-        data["results"].push(temp);
+      r.rows[0].results.forEach((row) => {
+        row["default?"] = row["default_style"] === 1 ? true : false;
+        delete row["default_style"];
+        if (row.photos === null) {
+          row.photos = [];
+          row.photos.push({
+            thumbnail_url: null,
+            url: null,
+          });
+        }
+        if (row.skus !== null) {
+          const temp = {};
+          row.skus.forEach((s) => {
+            temp[Object.keys(s)[0]] = s[Object.keys(s)[0]];
+          });
+          row["skus"] = temp;
+        } else {
+          row.skus = {
+            null: {
+              quantity: null,
+              size: null,
+            },
+          };
+        }
+        data["results"].push(row);
       });
+      res.send(data);
     })
-    .then(() => res.send(data))
+    // .then((r) => res.send(r.rows[0]))
     .catch((e) => res.send({ error: e }));
 });
 
