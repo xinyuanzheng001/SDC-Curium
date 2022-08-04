@@ -1,11 +1,18 @@
-const { Client } = require("pg");
+const { Client, Pool } = require("pg");
 
 var connectionString = "postgres://postgres:postgres@localhost:5432/sdc_curium";
+// const client = new Client(connectionString);
+// const credentials = {
+//   user: "postgres",
+//   database: "sdc_curium",
+//   password: "postgres",
+// };
 const credentials = {
   user: "postgres",
   database: "sdc_curium",
-  password: "postgres",
+  password: "postgres_sdc",
 };
 const client = new Client(credentials);
-// const client = new Client(connectionString);
-module.exports = client;
+const pool = new Pool(credentials);
+// module.exports = client;
+module.exports = pool;

@@ -28,7 +28,6 @@ app.get("/", (req, res) => {
  * @description get product base on the product_id
  */
 app.get("/:product_id", (req, res) => {
-  console.log(req.params);
   const product_id = req.params.product_id;
   // db.query(`SELECT * FROM product WHERE id=${product_id}`)
   //   .then((response) => {
@@ -40,13 +39,26 @@ app.get("/:product_id", (req, res) => {
   //       res.send(responseData);
   //     });
   //   })
+  // db.query(
+  //   `select json_agg(distinct jsonb_build_object('id', product.id, 'name', product.product_name, 'slogan', product.slogan, 'description', product.product_description, 'category', product.category, 'default_price', product.default_price)) as product, json_agg(distinct jsonb_build_object('feature', features.feature, 'value', features.value)) as features from product, features where product.id=${product_id} and features.product_id=${product_id};`
+  // )
   db.query(
-    `select json_agg(distinct jsonb_build_object('id', product.id, 'name', product.product_name, 'slogan', product.slogan, 'description', product.product_description, 'category', product.category, 'default_price', product.default_price)) as product, json_agg(distinct jsonb_build_object('feature', features.feature, 'value', features.value)) as features from product, features where product.id=${product_id} and features.product_id=product.id;`
+    `select json_agg(pr) as product
+    from (
+      select p.id, p.name, p.slogan, p.description, p.category, p.default_price,
+      (
+        select json_agg(json_build_object('feature', f.feature, 'value', f.value))
+        from (
+          select * from features where product_id = p.id
+        ) f
+      ) as features
+    from product as p where p.id = ${product_id}) pr;`
   )
     .then((data) => {
-      const responseData = data.rows[0].product[0];
-      responseData["features"] = data.rows[0].features;
-      res.send(responseData);
+      // const responseData = data.rows[0].product[0];
+      // responseData["features"] = data.rows[0].features;
+      // res.send(responseData);
+      res.send(data.rows[0].product[0]);
     })
     .catch((e) => res.send({ error: e.stack }));
 });
@@ -135,32 +147,34 @@ app.get("/:product_id/styles", (req, res) => {
     from styles as s where s.product_id = ${product_id}) st;`
   )
     .then((r) => {
-      r.rows[0].results.forEach((row) => {
-        row["default?"] = row["default_style"] === 1 ? true : false;
-        delete row["default_style"];
-        if (row.photos === null) {
-          row.photos = [];
-          row.photos.push({
-            thumbnail_url: null,
-            url: null,
-          });
-        }
-        if (row.skus !== null) {
-          const temp = {};
-          row.skus.forEach((s) => {
-            temp[Object.keys(s)[0]] = s[Object.keys(s)[0]];
-          });
-          row["skus"] = temp;
-        } else {
-          row.skus = {
-            null: {
-              quantity: null,
-              size: null,
-            },
-          };
-        }
-        data["results"].push(row);
-      });
+      if (r.rows[0].results) {
+        r.rows[0].results.forEach((row) => {
+          row["default?"] = row["default_style"] === 1 ? true : false;
+          delete row["default_style"];
+          if (row.photos === null) {
+            row.photos = [];
+            row.photos.push({
+              thumbnail_url: null,
+              url: null,
+            });
+          }
+          if (row.skus !== null) {
+            const temp = {};
+            row.skus.forEach((s) => {
+              temp[Object.keys(s)[0]] = s[Object.keys(s)[0]];
+            });
+            row["skus"] = temp;
+          } else {
+            row.skus = {
+              null: {
+                quantity: null,
+                size: null,
+              },
+            };
+          }
+          data["results"].push(row);
+        });
+      }
       res.send(data);
     })
     // .then((r) => res.send(r.rows[0]))

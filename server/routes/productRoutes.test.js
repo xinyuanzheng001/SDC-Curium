@@ -49,7 +49,7 @@ describe("GET /products/:product_id", () => {
 
 describe("GET /products/:product_id/styles", () => {
   it("Should get all styles of the specified product", (done) => {
-    const product_id = Math.floor(Math.random() * 100000);
+    const product_id = Math.floor(Math.random() * 10000);
     axios
       .get(`${API_URL}/${product_id}/styles`)
       .then((res) => {
