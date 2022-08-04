@@ -1,6 +1,7 @@
 const { Client, Pool } = require("pg");
 
-var connectionString = "postgres://postgres:postgres@localhost:5432/sdc_curium";
+var connectionString =
+  "postgres://postgres:postgres@18.222.165.150:5432/sdc_curium";
 // const client = new Client(connectionString);
 // const credentials = {
 //   user: "postgres",
@@ -8,6 +9,7 @@ var connectionString = "postgres://postgres:postgres@localhost:5432/sdc_curium";
 //   password: "postgres",
 // };
 const credentials = {
+  host: '18.222.165.150'
   user: "postgres",
   database: "sdc_curium",
   password: "postgres_sdc",
