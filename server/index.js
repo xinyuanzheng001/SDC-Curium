@@ -14,6 +14,7 @@ db.connect(function (err) {
 });
 
 app.use(express.static("../supernova-retail-app/dist"));
+app.use(express.static("verify"));
 app.use(express.json());
 app.use(express.urlencoded());
 app.get("/", (req, res) => {

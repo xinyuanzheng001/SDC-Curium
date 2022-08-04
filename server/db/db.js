@@ -9,7 +9,7 @@ var connectionString =
 //   password: "postgres",
 // };
 const credentials = {
-  host: '18.222.165.150'
+  host: "18.222.165.150",
   user: "postgres",
   database: "sdc_curium",
   password: "postgres_sdc",
